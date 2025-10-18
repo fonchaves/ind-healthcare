@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as csv from 'csv-parser';
+import csv from 'csv-parser';
 
 interface CsvRow {
   NU_NOTIFIC: string;
@@ -26,6 +26,28 @@ interface CsvRow {
   DT_EVOLUCA: string;
 }
 
+interface SragRecord {
+  notificationId: string;
+  notificationDate: Date;
+  weekNumber: number | null;
+  state: string;
+  stateResidence: string | null;
+  municipality: string | null;
+  municipalityRes: string | null;
+  sex: string | null;
+  ageYears: number | null;
+  ageType: number | null;
+  hospitalized: boolean;
+  hospitalDate: Date | null;
+  icu: boolean;
+  icuEntryDate: Date | null;
+  vaccinated: boolean;
+  dose1Date: Date | null;
+  dose2Date: Date | null;
+  evolution: string | null;
+  evolutionDate: Date | null;
+}
+
 @Injectable()
 export class SeedService {
   private readonly logger = new Logger(SeedService.name);
@@ -35,7 +57,7 @@ export class SeedService {
   async seedFromCsv(filePath: string): Promise<number> {
     this.logger.log(`Starting to import data from ${filePath}`);
 
-    const records: any[] = [];
+    const records: SragRecord[] = [];
 
     return new Promise((resolve, reject) => {
       fs.createReadStream(filePath)
@@ -47,42 +69,59 @@ export class SeedService {
               records.push(record);
             }
           } catch (error) {
-            this.logger.warn(`Error transforming row: ${error.message}`);
+            const errorMessage =
+              error instanceof Error ? error.message : 'Unknown error';
+            this.logger.warn(`Error transforming row: ${errorMessage}`);
           }
         })
-        .on('end', async () => {
-          try {
-            this.logger.log(`Parsed ${records.length} records, inserting into database...`);
+        .on('end', () => {
+          // Use immediately invoked async function to handle promises properly
+          void (async () => {
+            try {
+              this.logger.log(
+                `Parsed ${records.length} records, inserting into database...`,
+              );
 
-            // Insert in batches to avoid memory issues
-            const batchSize = 100;
-            let insertedCount = 0;
+              // Insert in batches to avoid memory issues
+              const batchSize = 100;
+              let insertedCount = 0;
 
-            for (let i = 0; i < records.length; i += batchSize) {
-              const batch = records.slice(i, i + batchSize);
-              await this.prisma.sragCase.createMany({
-                data: batch,
-                skipDuplicates: true,
-              });
-              insertedCount += batch.length;
-              this.logger.log(`Inserted ${insertedCount}/${records.length} records`);
+              for (let i = 0; i < records.length; i += batchSize) {
+                const batch = records.slice(i, i + batchSize);
+                await this.prisma.sragCase.createMany({
+                  data: batch,
+                  skipDuplicates: true,
+                });
+                insertedCount += batch.length;
+                this.logger.log(
+                  `Inserted ${insertedCount}/${records.length} records`,
+                );
+              }
+
+              this.logger.log(
+                `Successfully imported ${insertedCount} records from ${filePath}`,
+              );
+              resolve(insertedCount);
+            } catch (error) {
+              const errorMessage =
+                error instanceof Error ? error.message : 'Unknown error';
+              this.logger.error(`Error inserting records: ${errorMessage}`);
+              reject(
+                error instanceof Error
+                  ? error
+                  : new Error('Unknown error occurred'),
+              );
             }
-
-            this.logger.log(`Successfully imported ${insertedCount} records from ${filePath}`);
-            resolve(insertedCount);
-          } catch (error) {
-            this.logger.error(`Error inserting records: ${error.message}`);
-            reject(error);
-          }
+          })();
         })
-        .on('error', (error) => {
+        .on('error', (error: Error) => {
           this.logger.error(`Error reading CSV: ${error.message}`);
           reject(error);
         });
     });
   }
 
-  private transformRow(row: CsvRow): any | null {
+  private transformRow(row: CsvRow): SragRecord | null {
     try {
       // Skip rows without essential data
       if (!row.NU_NOTIFIC || !row.DT_NOTIFIC || !row.SG_UF_NOT) {
@@ -94,11 +133,16 @@ export class SeedService {
         return null;
       }
 
+      const state = this.cleanString(row.SG_UF_NOT);
+      if (!state) {
+        return null;
+      }
+
       return {
         notificationId: row.NU_NOTIFIC.replace(/"/g, ''),
         notificationDate,
         weekNumber: this.parseNumber(row.SEM_NOT),
-        state: this.cleanString(row.SG_UF_NOT),
+        state,
         stateResidence: this.cleanString(row.SG_UF),
         municipality: this.cleanString(row.CO_MUN_NOT),
         municipalityRes: this.cleanString(row.CO_MUN_RES),
@@ -116,7 +160,9 @@ export class SeedService {
         evolutionDate: this.parseDate(row.DT_EVOLUCA),
       };
     } catch (error) {
-      this.logger.warn(`Error transforming row: ${error.message}`);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.warn(`Error transforming row: ${errorMessage}`);
       return null;
     }
   }
@@ -149,7 +195,10 @@ export class SeedService {
     return isNaN(date.getTime()) ? null : date;
   }
 
-  private calculateAgeInYears(ageValue: string, ageType: string): number | null {
+  private calculateAgeInYears(
+    ageValue: string,
+    ageType: string,
+  ): number | null {
     const age = this.parseNumber(ageValue);
     const type = this.parseNumber(ageType);
 
@@ -174,7 +223,15 @@ export class SeedService {
    */
   async seedAllFiles(useFullData: boolean = false): Promise<void> {
     const dataFolder = useFullData ? 'full' : 'partial';
-    const dataPath = path.join(__dirname, '..', '..', '..', 'docs', 'datasource', dataFolder);
+    const dataPath = path.join(
+      __dirname,
+      '..',
+      '..',
+      '..',
+      'docs',
+      'datasource',
+      dataFolder,
+    );
 
     this.logger.log(`Starting to seed database from ${dataFolder} dataset...`);
 
@@ -185,8 +242,9 @@ export class SeedService {
     }
 
     // Read all CSV files in the directory
-    const files = fs.readdirSync(dataPath)
-      .filter(file => file.endsWith('.csv'))
+    const files = fs
+      .readdirSync(dataPath)
+      .filter((file) => file.endsWith('.csv'))
       .sort(); // Sort to process in order
 
     if (files.length === 0) {
@@ -203,10 +261,14 @@ export class SeedService {
         const count = await this.seedFromCsv(filePath);
         totalRecords += count;
       } catch (error) {
-        this.logger.error(`Error processing file ${file}: ${error.message}`);
+        const errorMessage =
+          error instanceof Error ? error.message : 'Unknown error';
+        this.logger.error(`Error processing file ${file}: ${errorMessage}`);
       }
     }
 
-    this.logger.log(`Seeding completed! Total records imported: ${totalRecords}`);
+    this.logger.log(
+      `Seeding completed! Total records imported: ${totalRecords}`,
+    );
   }
 }
