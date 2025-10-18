@@ -1,0 +1,43 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model SragCase {
+  id               String    @id @default(uuid())
+  notificationId   String    @map("notification_id")
+  notificationDate DateTime  @map("notification_date")
+  weekNumber       Int?      @map("week_number")
+  state            String    // SG_UF_NOT
+  stateResidence   String?   @map("state_residence") // SG_UF
+  municipality     String?   // CO_MUN_NOT
+  municipalityRes  String?   @map("municipality_res") // CO_MUN_RES
+  sex              String?
+  ageYears         Int?      @map("age_years")
+  ageType          Int?      @map("age_type") // TP_IDADE (1=dias, 2=meses, 3=anos)
+  hospitalized     Boolean   @default(false)
+  hospitalDate     DateTime? @map("hospital_date")
+  icu              Boolean   @default(false)
+  icuEntryDate     DateTime? @map("icu_entry_date")
+  vaccinated       Boolean   @default(false)
+  dose1Date        DateTime? @map("dose1_date")
+  dose2Date        DateTime? @map("dose2_date")
+  evolution        String?   // 1=Cura, 2=Óbito, 3=Óbito por outras causas
+  evolutionDate    DateTime? @map("evolution_date")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  @@index([state, notificationDate])
+  @@index([notificationDate])
+  @@index([evolution])
+  @@map("srag_cases")
+}
