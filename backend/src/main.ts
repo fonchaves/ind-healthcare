@@ -23,7 +23,9 @@ async function bootstrap() {
   // Setup Swagger
   const config = new DocumentBuilder()
     .setTitle('SRAG Healthcare Monitoring API')
-    .setDescription('API for monitoring SRAG (Severe Acute Respiratory Syndrome) data')
+    .setDescription(
+      'API for monitoring SRAG (Severe Acute Respiratory Syndrome) data',
+    )
     .setVersion('1.0')
     .build();
   const document = SwaggerModule.createDocument(app, config);
