@@ -16,7 +16,7 @@ Construir uma aplicação web full-stack para monitorar e exibir dados de saúde
 
 ## Contexto
 
-A Indicium HealthCare Inc. está interessada em criar uma solução baseada em dados que possa ajudar profissionais da área da saúde a ter um entendimento em tempo real sobre a severidade e o avanço de surtos de doenças. Para tanto, você foi contratado(a) como Engenheiro(a) Full-Stack Pleno para desenvolver uma prova de conceito (PoC) de uma aplicação web que forneça métricas e notícias sobre a Síndrome Respiratória Aguda Grave (SRAG).
+A Ind. HealthCare Inc. está interessada em criar uma solução baseada em dados que possa ajudar profissionais da área da saúde a ter um entendimento em tempo real sobre a severidade e o avanço de surtos de doenças. Para tanto, você foi contratado(a) como Engenheiro(a) Full-Stack Pleno para desenvolver uma prova de conceito (PoC) de uma aplicação web que forneça métricas e notícias sobre a Síndrome Respiratória Aguda Grave (SRAG).
 
 Você pode usar os dados do link [https://opendatasus.saude.gov.br/dataset/srag-2021-a-2024](https://opendatasus.saude.gov.br/dataset/srag-2021-a-2024) para popular um banco de dados. A estrutura desses dados está disponível para consulta em [https://opendatasus.saude.gov.br/dataset/srag-2021-a-2024/resource/3135ac9c-2019-4989-a893-2ed50ebd8e68](https://opendatasus.saude.gov.br/dataset/srag-2021-a-2024/resource/3135ac9c-2019-4989-a893-2ed50ebd8e68).
 
