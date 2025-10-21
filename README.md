@@ -442,7 +442,50 @@ docker run -p 3001:3001 \
 - Usuário não-root (`nestjs:nodejs`) para segurança
 - Health check na porta 3001
 - Prisma migrations automáticas
+- Seed automático no primeiro deploy
 - Imagem otimizada com Alpine Linux
+
+### CapRover Deployment (Backend) ⭐ RECOMENDADO
+
+O backend está configurado para deploy no CapRover com PostgreSQL One-Click App.
+
+**Guia Completo:** Consulte [DEPLOY_CAPROVER.md](DEPLOY_CAPROVER.md) para instruções detalhadas.
+
+#### Deploy Rápido
+
+```bash
+# 1. Instalar CapRover CLI
+npm install -g caprover
+
+# 2. Fazer login
+caprover login
+
+# 3. Deploy
+cd backend
+caprover deploy
+```
+
+**Recursos do Deploy CapRover:**
+- ✅ PostgreSQL via One-Click App
+- ✅ Migrations automáticas (Prisma)
+- ✅ Seed automático no primeiro deploy
+- ✅ Health checks configurados
+- ✅ HTTPS com Let's Encrypt
+- ✅ Logs em tempo real
+- ✅ Zero-downtime deployments
+
+**Configuração necessária:**
+- Criar app PostgreSQL: `ind-healthcare-db`
+- Criar app Backend: `ind-healthcare-api`
+- Configurar variáveis de ambiente (DATABASE_URL, CORS_ORIGIN, etc.)
+
+**URLs após deploy:**
+- API: `http://ind-healthcare-api.captain.cloud.fonchaves.com`
+- Swagger: `http://ind-healthcare-api.captain.cloud.fonchaves.com/api/docs`
+
+**Ver logs:**
+- Painel: `http://captain.cloud.fonchaves.com/` → Apps → ind-healthcare-api → App Logs
+- **Nota:** Não há comando CLI para logs, use o painel web
 
 ### Vercel Deployment (Frontend)
 
@@ -474,6 +517,7 @@ O frontend está otimizado para deploy na Vercel com Next.js 15.
 ### Plataformas Recomendadas
 
 **Backend + Database:**
+- **CapRover**: PaaS self-hosted, One-Click Apps, suporte Docker completo ✅ (usado neste projeto)
 - **Railway**: Auto-deploy do GitHub, PostgreSQL gerenciado, suporte Docker
 - **Render**: Free tier disponível, suporte Docker, databases gerenciados
 - **Fly.io**: Deploy global, Docker-native, extensões PostgreSQL

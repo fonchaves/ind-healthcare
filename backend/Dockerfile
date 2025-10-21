@@ -49,6 +49,10 @@ COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist
 COPY --from=builder --chown=nestjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nestjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nestjs:nodejs /app/package.json ./
+COPY --from=builder --chown=nestjs:nodejs /app/scripts/docker-entrypoint.sh ./scripts/
+
+# Make entrypoint executable
+RUN chmod +x ./scripts/docker-entrypoint.sh
 
 # Switch to non-root user
 USER nestjs
@@ -60,5 +64,5 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=3s --start-period=30s \
   CMD node -e "require('http').get('http://localhost:3001/', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-# Start application
-CMD ["sh", "-c", "pnpm exec prisma migrate deploy && node dist/main.js"]
+# Start application with entrypoint script
+CMD ["./scripts/docker-entrypoint.sh"]
