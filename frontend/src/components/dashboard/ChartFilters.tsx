@@ -4,19 +4,25 @@ interface ChartFiltersProps {
   filters: ChartFiltersType;
   onFiltersChange: (filters: ChartFiltersType) => void;
   states: string[];
+  municipalities: Array<{ code: string; name: string }>;
 }
 
-export function ChartFilters({ filters, onFiltersChange, states }: ChartFiltersProps) {
+export function ChartFilters({ filters, onFiltersChange, states, municipalities }: ChartFiltersProps) {
   const handlePeriodChange = (period: PeriodType) => {
     onFiltersChange({ ...filters, period });
   };
 
   const handleGroupByChange = (groupBy: GroupByType) => {
-    onFiltersChange({ ...filters, groupBy });
+    // Clear state/municipality filter when changing groupBy
+    onFiltersChange({ ...filters, groupBy, state: undefined, municipality: undefined });
   };
 
-  const handleStateChange = (state: string) => {
-    onFiltersChange({ ...filters, state: state || undefined });
+  const handleRegionFilterChange = (value: string) => {
+    if (filters.groupBy === 'municipality') {
+      onFiltersChange({ ...filters, municipality: value || undefined, state: undefined });
+    } else {
+      onFiltersChange({ ...filters, state: value || undefined, municipality: undefined });
+    }
   };
 
   return (
@@ -97,24 +103,44 @@ export function ChartFilters({ filters, onFiltersChange, states }: ChartFiltersP
           </div>
         </div>
 
-        {/* State Filter */}
+        {/* Region Filter - Dynamic based on groupBy */}
         <div>
-          <label htmlFor="state-select" className="block text-sm font-medium text-gray-700 mb-2">
-            Estado (opcional)
+          <label htmlFor="region-select" className="block text-sm font-medium text-gray-700 mb-2">
+            {filters.groupBy === 'municipality' ? 'Município (obrigatório)' : 'Estado (opcional)'}
+            {filters.groupBy === 'municipality' && <span className="text-red-600 ml-1">*</span>}
           </label>
           <select
-            id="state-select"
-            value={filters.state || ''}
-            onChange={(e) => handleStateChange(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            id="region-select"
+            value={filters.groupBy === 'municipality' ? (filters.municipality || '') : (filters.state || '')}
+            onChange={(e) => handleRegionFilterChange(e.target.value)}
+            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              filters.groupBy === 'municipality' && !filters.municipality
+                ? 'border-red-300 bg-red-50'
+                : 'border-gray-300'
+            }`}
+            required={filters.groupBy === 'municipality'}
           >
-            <option value="">Todos os estados</option>
-            {states.map((state) => (
-              <option key={state} value={state}>
-                {state}
-              </option>
-            ))}
+            <option value="">
+              {filters.groupBy === 'municipality' ? 'Selecione um município...' : 'Todos os estados'}
+            </option>
+            {filters.groupBy === 'municipality'
+              ? municipalities.map((mun) => (
+                  <option key={mun.code} value={mun.code}>
+                    {mun.name}
+                  </option>
+                ))
+              : states.map((state) => (
+                  <option key={state} value={state}>
+                    {state}
+                  </option>
+                ))
+            }
           </select>
+          {filters.groupBy === 'municipality' && !filters.municipality && (
+            <p className="mt-1 text-sm text-red-600">
+              Por favor, selecione um município para visualizar o gráfico. Existem muitos municípios para exibir todos simultaneamente.
+            </p>
+          )}
         </div>
       </div>
     </div>

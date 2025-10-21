@@ -15,6 +15,7 @@ export default function Home() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [states, setStates] = useState<string[]>([]);
+  const [municipalities, setMunicipalities] = useState<Array<{ code: string; name: string }>>([]);
   const [loadingMetrics, setLoadingMetrics] = useState(true);
   const [loadingChart, setLoadingChart] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +46,13 @@ export default function Home() {
   // Fetch chart data
   useEffect(() => {
     const fetchChartData = async () => {
+      // Don't fetch if municipality grouping is selected without a municipality filter
+      if (filters.groupBy === 'municipality' && !filters.municipality) {
+        setChartData([]);
+        setLoadingChart(false);
+        return;
+      }
+
       try {
         setLoadingChart(true);
         const data = await chartsService.getCasesChartData(filters);
@@ -72,6 +80,20 @@ export default function Home() {
     };
 
     fetchStates();
+  }, []);
+
+  // Fetch available municipalities (independent of filters)
+  useEffect(() => {
+    const fetchMunicipalities = async () => {
+      try {
+        const availableMunicipalities = await chartsService.getAvailableMunicipalities();
+        setMunicipalities(availableMunicipalities);
+      } catch (err) {
+        console.error("Error fetching municipalities:", err);
+      }
+    };
+
+    fetchMunicipalities();
   }, []);
 
   return (
@@ -108,8 +130,28 @@ export default function Home() {
           filters={filters}
           onFiltersChange={setFilters}
           states={states}
+          municipalities={municipalities}
         />
-        <CasesChart data={chartData} loading={loadingChart} />
+
+        {/* Show placeholder when municipality grouping is selected without filter */}
+        {filters.groupBy === 'municipality' && !filters.municipality ? (
+          <div className="bg-white rounded-lg shadow-md p-6 flex items-center justify-center h-96">
+            <div className="text-center max-w-md">
+              <svg className="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+              </svg>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Selecione um município
+              </h3>
+              <p className="text-gray-600">
+                Para visualizar o gráfico por município, por favor selecione um município específico acima.
+                Há muitos municípios no Brasil para exibir todos simultaneamente de forma legível.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <CasesChart data={chartData} loading={loadingChart} />
+        )}
       </main>
 
       <footer className="bg-white border-t mt-12">
