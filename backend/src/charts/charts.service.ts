@@ -95,6 +95,22 @@ export class ChartsService {
     return result;
   }
 
+  async getAvailableStates(): Promise<string[]> {
+    this.logger.log('Fetching all available states');
+
+    const states = await this.prisma.sragCase.findMany({
+      select: {
+        state: true,
+      },
+      distinct: ['state'],
+      orderBy: {
+        state: 'asc',
+      },
+    });
+
+    return states.map((s) => s.state);
+  }
+
   private formatDateByPeriod(date: Date, period: PeriodType): string {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');

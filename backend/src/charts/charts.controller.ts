@@ -22,4 +22,25 @@ export class ChartsController {
     const data = await this.chartsService.getCasesChartData(filters);
     return { data };
   }
+
+  @Get('states')
+  @ApiOperation({ summary: 'Get all available states' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of all states retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        states: {
+          type: 'array',
+          items: { type: 'string' },
+          example: ['SP', 'RJ', 'MG', 'RS'],
+        },
+      },
+    },
+  })
+  async getAvailableStates(): Promise<{ states: string[] }> {
+    const states = await this.chartsService.getAvailableStates();
+    return { states };
+  }
 }
