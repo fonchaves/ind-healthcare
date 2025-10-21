@@ -13,8 +13,8 @@ export function ChartFilters({ filters, onFiltersChange, states, municipalities 
   };
 
   const handleGroupByChange = (groupBy: GroupByType) => {
-    // Clear state/municipality filter when changing groupBy
-    onFiltersChange({ ...filters, groupBy, state: undefined, municipality: undefined });
+    // Just change groupBy - parent component will handle filter restoration
+    onFiltersChange({ ...filters, groupBy });
   };
 
   const handleRegionFilterChange = (value: string) => {

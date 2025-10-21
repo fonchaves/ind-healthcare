@@ -25,6 +25,36 @@ export default function Home() {
     groupBy: "state",
   });
 
+  // Keep track of last selected state and municipality to restore when switching back
+  const [lastSelectedState, setLastSelectedState] = useState<string | undefined>(undefined);
+  const [lastSelectedMunicipality, setLastSelectedMunicipality] = useState<string | undefined>(undefined);
+
+  // Custom handler for filter changes that preserves state/municipality selections
+  const handleFiltersChange = (newFilters: ChartFiltersType) => {
+    // Save selections when they change
+    if (newFilters.state !== filters.state && newFilters.state) {
+      setLastSelectedState(newFilters.state);
+    }
+    if (newFilters.municipality !== filters.municipality && newFilters.municipality) {
+      setLastSelectedMunicipality(newFilters.municipality);
+    }
+
+    // If groupBy changed, restore the appropriate filter
+    if (newFilters.groupBy !== filters.groupBy) {
+      if (newFilters.groupBy === 'state') {
+        // Switching to state grouping - restore last state
+        newFilters.state = lastSelectedState;
+        newFilters.municipality = undefined;
+      } else {
+        // Switching to municipality grouping - restore last municipality
+        newFilters.municipality = lastSelectedMunicipality;
+        newFilters.state = undefined;
+      }
+    }
+
+    setFilters(newFilters);
+  };
+
   // Fetch metrics
   useEffect(() => {
     const fetchMetrics = async () => {
@@ -128,7 +158,7 @@ export default function Home() {
         {/* Chart Section */}
         <ChartFilters
           filters={filters}
-          onFiltersChange={setFilters}
+          onFiltersChange={handleFiltersChange}
           states={states}
           municipalities={municipalities}
         />
