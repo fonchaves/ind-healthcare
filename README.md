@@ -91,8 +91,9 @@ Aplicação web que fornece métricas em tempo real e visualizações gráficas 
 ### 1. Clone o Repositório
 
 ```bash
-git clone <repository-url>
-cd desafio-indicium
+git clone https://github.com/fonchaves/ind-healthcare
+cd ind-healthcare
+cd backend
 ```
 
 ### 2. Inicie o Banco de Dados
