@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { MetricsGrid } from "../components/dashboard/MetricsGrid";
 import { ChartFilters } from "../components/dashboard/ChartFilters";
 import { CasesChart } from "../components/dashboard/CasesChart";
@@ -14,6 +14,7 @@ import type {
 export default function Home() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+  const [states, setStates] = useState<string[]>([]);
   const [loadingMetrics, setLoadingMetrics] = useState(true);
   const [loadingChart, setLoadingChart] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,12 +23,6 @@ export default function Home() {
     period: "monthly",
     groupBy: "state",
   });
-
-  // Extract unique states from chart data
-  const states = useMemo(() => {
-    if (!chartData || chartData.length === 0) return [];
-    return Array.from(new Set(chartData.map((d) => d.region))).sort();
-  }, [chartData]);
 
   // Fetch metrics
   useEffect(() => {
@@ -64,6 +59,20 @@ export default function Home() {
 
     fetchChartData();
   }, [filters]);
+
+  // Fetch available states (independent of filters)
+  useEffect(() => {
+    const fetchStates = async () => {
+      try {
+        const availableStates = await chartsService.getAvailableStates();
+        setStates(availableStates);
+      } catch (err) {
+        console.error("Error fetching states:", err);
+      }
+    };
+
+    fetchStates();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">

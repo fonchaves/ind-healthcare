@@ -30,6 +30,11 @@ export const chartsService = {
     const response = await api.get<ChartData>(`/api/charts/cases?${params.toString()}`);
     return response.data;
   },
+
+  async getAvailableStates(): Promise<string[]> {
+    const response = await api.get<{ states: string[] }>('/api/charts/states');
+    return response.data.states;
+  },
 };
 
 export default api;
