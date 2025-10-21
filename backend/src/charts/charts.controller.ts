@@ -43,4 +43,33 @@ export class ChartsController {
     const states = await this.chartsService.getAvailableStates();
     return { states };
   }
+
+  @Get('municipalities')
+  @ApiOperation({ summary: 'Get all available municipalities' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of all municipalities with codes and names',
+    schema: {
+      type: 'object',
+      properties: {
+        municipalities: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              code: { type: 'string', example: '355030' },
+              name: { type: 'string', example: 'SAO PAULO' },
+            },
+          },
+        },
+      },
+    },
+  })
+  async getAvailableMunicipalities(): Promise<{
+    municipalities: Array<{ code: string; name: string }>;
+  }> {
+    const municipalities =
+      await this.chartsService.getAvailableMunicipalities();
+    return { municipalities };
+  }
 }

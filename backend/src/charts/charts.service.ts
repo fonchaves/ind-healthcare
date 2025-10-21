@@ -111,6 +111,32 @@ export class ChartsService {
     return states.map((s) => s.state);
   }
 
+  async getAvailableMunicipalities(): Promise<
+    Array<{ code: string; name: string }>
+  > {
+    this.logger.log('Fetching all available municipalities');
+
+    const municipalities = await this.prisma.sragCase.findMany({
+      where: {
+        municipalityName: { not: null },
+        municipality: { not: null },
+      },
+      select: {
+        municipality: true,
+        municipalityName: true,
+      },
+      distinct: ['municipality'],
+      orderBy: {
+        municipalityName: 'asc',
+      },
+    });
+
+    return municipalities.map((m) => ({
+      code: m.municipality as string,
+      name: m.municipalityName as string,
+    }));
+  }
+
   private formatDateByPeriod(date: Date, period: PeriodType): string {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
