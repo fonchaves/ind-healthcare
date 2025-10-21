@@ -121,8 +121,12 @@ pnpm exec prisma migrate dev
 # Importe os dados (dataset parcial para desenvolvimento)
 pnpm run seed
 
-# Para dados completos em produção, use:
+# Para dados completos em desenvolvimento, use:
 # pnpm run seed:full
+
+# NOTA: Em produção (Docker), use os comandos abaixo:
+# pnpm run seed:prod        # Dataset parcial
+# pnpm run seed:prod:full   # Dataset completo
 
 # Inicie o servidor de desenvolvimento
 pnpm run start:dev
@@ -405,8 +409,8 @@ docker-compose up -d
 # Verifica logs
 docker-compose logs -f backend
 
-# Popula banco com dados completos
-docker exec -it srag-backend pnpm run seed:full
+# Popula banco com dados completos (use seed:prod:full em produção)
+docker exec -it srag-backend pnpm run seed:prod:full
 ```
 
 O `docker-compose.yml` inclui:
@@ -506,7 +510,7 @@ NEXT_PUBLIC_API_URL=https://seu-backend.railway.app
 
 **Backend:**
 1. ✅ Verificar conexão com banco: logs do Prisma
-2. ✅ Popular dados: `docker exec -it srag-backend pnpm run seed:full`
+2. ✅ Popular dados: `docker exec -it srag-backend pnpm run seed:prod:full`
 3. ✅ Testar endpoints: `https://seu-backend.com/api/docs`
 4. ✅ Monitorar health check: `https://seu-backend.com/` deve retornar 200
 

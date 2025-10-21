@@ -230,7 +230,6 @@ export class SeedService {
       __dirname,
       '..',
       '..',
-      '..',
       'docs',
       'datasource',
       dataFolder,
