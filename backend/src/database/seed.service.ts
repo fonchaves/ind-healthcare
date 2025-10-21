@@ -8,6 +8,7 @@ interface CsvRow {
   NU_NOTIFIC: string;
   DT_NOTIFIC: string;
   SEM_NOT: string;
+  ID_MUNICIP: string;
   SG_UF_NOT: string;
   CO_MUN_NOT: string;
   SG_UF: string;
@@ -33,6 +34,7 @@ interface SragRecord {
   state: string;
   stateResidence: string | null;
   municipality: string | null;
+  municipalityName: string | null;
   municipalityRes: string | null;
   sex: string | null;
   ageYears: number | null;
@@ -145,6 +147,7 @@ export class SeedService {
         state,
         stateResidence: this.cleanString(row.SG_UF),
         municipality: this.cleanString(row.CO_MUN_NOT),
+        municipalityName: this.cleanString(row.ID_MUNICIP),
         municipalityRes: this.cleanString(row.CO_MUN_RES),
         sex: this.cleanString(row.CS_SEXO),
         ageYears: this.calculateAgeInYears(row.NU_IDADE_N, row.TP_IDADE),

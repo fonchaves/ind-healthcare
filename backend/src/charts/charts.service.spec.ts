@@ -5,7 +5,7 @@ import { PeriodType, GroupByType } from './dto/chart-filters.dto';
 
 describe('ChartsService', () => {
   let service: ChartsService;
-  let prismaService: PrismaService;
+  // let prismaService: PrismaService;
 
   const mockPrismaService = {
     sragCase: {
@@ -25,7 +25,7 @@ describe('ChartsService', () => {
     }).compile();
 
     service = module.get<ChartsService>(ChartsService);
-    prismaService = module.get<PrismaService>(PrismaService);
+    // prismaService = module.get<PrismaService>(PrismaService);
   });
 
   afterEach(() => {
@@ -41,22 +41,22 @@ describe('ChartsService', () => {
       {
         notificationDate: new Date('2024-01-15'),
         state: 'SP',
-        municipality: '355030',
+        municipalityName: 'SAO PAULO',
       },
       {
         notificationDate: new Date('2024-01-20'),
         state: 'SP',
-        municipality: '355030',
+        municipalityName: 'SAO PAULO',
       },
       {
         notificationDate: new Date('2024-01-25'),
         state: 'RJ',
-        municipality: '330455',
+        municipalityName: 'RIO DE JANEIRO',
       },
       {
         notificationDate: new Date('2024-02-10'),
         state: 'SP',
-        municipality: '355030',
+        municipalityName: 'SAO PAULO',
       },
     ];
 
@@ -75,17 +75,23 @@ describe('ChartsService', () => {
       expect(result.length).toBe(3);
 
       // Find SP January data
-      const spJan = result.find((d) => d.date === '2024-01' && d.region === 'SP');
+      const spJan = result.find(
+        (d) => d.date === '2024-01' && d.region === 'SP',
+      );
       expect(spJan).toBeDefined();
       expect(spJan?.cases).toBe(2);
 
       // Find RJ January data
-      const rjJan = result.find((d) => d.date === '2024-01' && d.region === 'RJ');
+      const rjJan = result.find(
+        (d) => d.date === '2024-01' && d.region === 'RJ',
+      );
       expect(rjJan).toBeDefined();
       expect(rjJan?.cases).toBe(1);
 
       // Find SP February data
-      const spFeb = result.find((d) => d.date === '2024-02' && d.region === 'SP');
+      const spFeb = result.find(
+        (d) => d.date === '2024-02' && d.region === 'SP',
+      );
       expect(spFeb).toBeDefined();
       expect(spFeb?.cases).toBe(1);
     });
@@ -118,10 +124,10 @@ describe('ChartsService', () => {
         groupBy: GroupByType.MUNICIPALITY,
       });
 
-      // Should group by municipality codes
+      // Should group by municipality names
       const municipalities = [...new Set(result.map((d) => d.region))];
-      expect(municipalities).toContain('355030');
-      expect(municipalities).toContain('330455');
+      expect(municipalities).toContain('SAO PAULO');
+      expect(municipalities).toContain('RIO DE JANEIRO');
     });
 
     it('should format dates daily when period is daily', async () => {
@@ -177,13 +183,13 @@ describe('ChartsService', () => {
       }
     });
 
-    it('should handle null municipality', async () => {
+    it('should handle null municipalityName', async () => {
       const casesWithNull = [
         ...mockCases,
         {
           notificationDate: new Date('2024-01-15'),
           state: 'BA',
-          municipality: null,
+          municipalityName: null,
         },
       ];
 
@@ -194,9 +200,43 @@ describe('ChartsService', () => {
         groupBy: GroupByType.MUNICIPALITY,
       });
 
-      // Should have 'Unknown' for null municipalities
+      // Should have 'Unknown' for null municipality names
       const unknownMunic = result.find((d) => d.region === 'Unknown');
       expect(unknownMunic).toBeDefined();
+    });
+  });
+
+  describe('getAvailableStates', () => {
+    it('should return distinct states in alphabetical order', async () => {
+      const mockStates = [
+        { state: 'SP' },
+        { state: 'RJ' },
+        { state: 'MG' },
+        { state: 'RS' },
+      ];
+
+      mockPrismaService.sragCase.findMany.mockResolvedValue(mockStates);
+
+      const result = await service.getAvailableStates();
+
+      expect(result).toBeDefined();
+      expect(Array.isArray(result)).toBe(true);
+      expect(result).toEqual(['SP', 'RJ', 'MG', 'RS']);
+      expect(mockPrismaService.sragCase.findMany).toHaveBeenCalledWith({
+        select: { state: true },
+        distinct: ['state'],
+        orderBy: { state: 'asc' },
+      });
+    });
+
+    it('should return empty array when no states found', async () => {
+      mockPrismaService.sragCase.findMany.mockResolvedValue([]);
+
+      const result = await service.getAvailableStates();
+
+      expect(result).toBeDefined();
+      expect(Array.isArray(result)).toBe(true);
+      expect(result.length).toBe(0);
     });
   });
 });

@@ -36,7 +36,7 @@ export class ChartsService {
       select: {
         notificationDate: true,
         state: true,
-        municipality: true,
+        municipalityName: true,
       },
       orderBy: {
         notificationDate: 'asc',
@@ -57,7 +57,7 @@ export class ChartsService {
     cases: Array<{
       notificationDate: Date;
       state: string;
-      municipality: string | null;
+      municipalityName: string | null;
     }>,
     period: PeriodType,
     groupBy: GroupByType,
@@ -72,7 +72,7 @@ export class ChartsService {
       const regionKey =
         groupBy === GroupByType.STATE
           ? caseData.state
-          : caseData.municipality || 'Unknown';
+          : caseData.municipalityName || 'Unknown';
 
       const key = `${dateKey}|${regionKey}`;
       aggregated.set(key, (aggregated.get(key) || 0) + 1);

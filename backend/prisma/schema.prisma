@@ -20,7 +20,8 @@ model SragCase {
   weekNumber       Int?      @map("week_number")
   state            String    // SG_UF_NOT
   stateResidence   String?   @map("state_residence") // SG_UF
-  municipality     String?   // CO_MUN_NOT
+  municipality     String?   // CO_MUN_NOT (municipality code)
+  municipalityName String?   @map("municipality_name") // ID_MUNICIP (municipality name)
   municipalityRes  String?   @map("municipality_res") // CO_MUN_RES
   sex              String?
   ageYears         Int?      @map("age_years")
