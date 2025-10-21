@@ -35,6 +35,11 @@ export const chartsService = {
     const response = await api.get<{ states: string[] }>('/api/charts/states');
     return response.data.states;
   },
+
+  async getAvailableMunicipalities(): Promise<Array<{ code: string; name: string }>> {
+    const response = await api.get<{ municipalities: Array<{ code: string; name: string }> }>('/api/charts/municipalities');
+    return response.data.municipalities;
+  },
 };
 
 export default api;
