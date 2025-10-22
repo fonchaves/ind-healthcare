@@ -30,7 +30,7 @@ export function CasesChart({ data, loading }: CasesChartProps) {
       }
       acc[point.date][point.region] = point.cases;
       return acc;
-    }, {} as Record<string, any>);
+    }, {} as Record<string, Record<string, string | number>>);
 
     return Object.values(groupedByDate);
   }, [data]);
