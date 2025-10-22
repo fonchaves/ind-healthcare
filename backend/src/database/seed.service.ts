@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as https from 'https';
 import csv from 'csv-parser';
 
 interface CsvRow {
@@ -49,6 +50,16 @@ interface SragRecord {
   evolution: string | null;
   evolutionDate: Date | null;
 }
+
+// Remote CSV URLs from OpenDataSUS S3
+const REMOTE_CSV_URLS: Record<number, string> = {
+  2019: 'https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SRAG/2019/INFLUD19-26-06-2025.csv',
+  2020: 'https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SRAG/2020/INFLUD20-26-06-2025.csv',
+  2021: 'https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SRAG/2021/INFLUD21-26-06-2025.csv',
+  2022: 'https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SRAG/2022/INFLUD22-26-06-2025.csv',
+  2023: 'https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SRAG/2023/INFLUD23-26-06-2025.csv',
+  2024: 'https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SRAG/2024/INFLUD24-26-06-2025.csv',
+};
 
 @Injectable()
 export class SeedService {
@@ -221,21 +232,141 @@ export class SeedService {
   }
 
   /**
-   * Seeds database from CSV files
-   * @param useFullData - If true, uses full dataset from 'full' folder, otherwise uses 'partial' folder for development
+   * Process CSV from HTTP stream
+   */
+  private async seedFromUrl(url: string, year: number): Promise<number> {
+    this.logger.log(`Starting to download and import data from ${url}`);
+
+    const records: SragRecord[] = [];
+
+    return new Promise((resolve, reject) => {
+      https
+        .get(url, (response) => {
+          if (response.statusCode !== 200) {
+            return reject(
+              new Error(`Failed to download ${url}: ${response.statusCode}`),
+            );
+          }
+
+          response
+            .pipe(csv({ separator: ';' }))
+            .on('data', (row: CsvRow) => {
+              try {
+                const record = this.transformRow(row);
+                if (record) {
+                  records.push(record);
+                }
+              } catch {
+                // Skip invalid rows
+              }
+            })
+            .on('end', () => {
+              // Use immediately invoked async function to handle promises properly
+              void (async () => {
+                try {
+                  this.logger.log(
+                    `Parsed ${records.length} records from year ${year}, inserting into database...`,
+                  );
+
+                  // Insert in batches to avoid memory issues
+                  const batchSize = 100;
+                  let insertedCount = 0;
+
+                  for (let i = 0; i < records.length; i += batchSize) {
+                    const batch = records.slice(i, i + batchSize);
+                    await this.prisma.sragCase.createMany({
+                      data: batch,
+                      skipDuplicates: true,
+                    });
+                    insertedCount += batch.length;
+
+                    // Log progress every 1000 records
+                    if (
+                      insertedCount % 1000 === 0 ||
+                      insertedCount === records.length
+                    ) {
+                      this.logger.log(
+                        `Year ${year}: Inserted ${insertedCount}/${records.length} records`,
+                      );
+                    }
+                  }
+
+                  this.logger.log(
+                    `Successfully imported ${insertedCount} records from year ${year}`,
+                  );
+                  resolve(insertedCount);
+                } catch (error) {
+                  const errorMessage =
+                    error instanceof Error ? error.message : 'Unknown error';
+                  this.logger.error(`Error inserting records: ${errorMessage}`);
+                  reject(
+                    error instanceof Error
+                      ? error
+                      : new Error('Unknown error occurred'),
+                  );
+                }
+              })();
+            })
+            .on('error', (error) => {
+              this.logger.error(`Error parsing CSV: ${error.message}`);
+              reject(error);
+            });
+        })
+        .on('error', (error) => {
+          this.logger.error(`Error downloading CSV: ${error.message}`);
+          reject(error);
+        });
+    });
+  }
+
+  /**
+   * Seeds database from remote CSV files or local files
+   * @param useFullData - If true, uses remote URLs. If false, uses local partial folder
    */
   async seedAllFiles(useFullData: boolean = false): Promise<void> {
-    const dataFolder = useFullData ? 'full' : 'partial';
+    if (useFullData) {
+      // Use remote URLs for full dataset
+      this.logger.log('Starting to seed database from REMOTE full dataset...');
+
+      const years = Object.keys(REMOTE_CSV_URLS).map(Number).sort();
+      this.logger.log(
+        `Found ${years.length} years to process: ${years.join(', ')}`,
+      );
+
+      let totalRecords = 0;
+      for (const year of years) {
+        const url = REMOTE_CSV_URLS[year];
+        try {
+          const count = await this.seedFromUrl(url, year);
+          totalRecords += count;
+          this.logger.log(
+            `Progress: ${totalRecords} total records imported so far`,
+          );
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : 'Unknown error';
+          this.logger.error(`Failed to import year ${year}: ${errorMessage}`);
+          throw error;
+        }
+      }
+
+      this.logger.log(
+        `Seed completed! Total records imported: ${totalRecords}`,
+      );
+      return;
+    }
+
+    // Use local files for partial dataset (development)
     const dataPath = path.join(
       __dirname,
       '..',
       '..',
       'docs',
       'datasource',
-      dataFolder,
+      'partial',
     );
 
-    this.logger.log(`Starting to seed database from ${dataFolder} dataset...`);
+    this.logger.log('Starting to seed database from LOCAL partial dataset...');
 
     // Check if directory exists
     if (!fs.existsSync(dataPath)) {
